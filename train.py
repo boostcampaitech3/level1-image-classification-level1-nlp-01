@@ -11,7 +11,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-from torch.optim.lr_scheduler import StepLR
+from torch.optim.lr_scheduler import StepLR, CosineAnnealingLR
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from sklearn.metrics import f1_score
@@ -148,8 +148,13 @@ def train(data_dir, model_dir, args):
         lr=args.lr,
         weight_decay=5e-4
     )
-    scheduler = StepLR(optimizer, args.lr_decay_step, gamma=0.5)
+    
+    if args.lr_scheduler == 'StepLR':
+        scheduler = StepLR(optimizer, args.lr_decay_step, gamma=0.5)
+    elif args.lr_scheduler == 'CosineAnnealingLR':
+        scheduler = CosineAnnealingLR(optimizer, T_max=10, eta_min=0)
 
+        
     # -- logging
     logger = SummaryWriter(log_dir=save_dir)
     with open(os.path.join(save_dir, 'config.json'), 'w', encoding='utf-8') as f:
@@ -240,15 +245,21 @@ def train(data_dir, model_dir, args):
             f1_pred = f1_pred.cpu().numpy()
             
             f1_macro = f1_score(f1_labels, f1_pred, average='macro')
+<<<<<<< HEAD
             
             if f1_macro > best_f1_score:
                 
+=======
+
+            if f1_macro > best_f1_score:
+>>>>>>> main
                 if best_f1_score_model_path is not None:
                     os.remove(best_f1_score_model_path)
+                best_f1_score = f1_macro
                 best_f1_score_model_path = f"{save_dir}/Epoch{epoch}_f1_score.pth"
                 print(f"New best model for val f1_score : {best_f1_score:4.2%}! saving the best model..")
                 torch.save(model.module.state_dict(), best_f1_score_model_path)
-                best_f1_score = f1_macro
+                
             
             val_loss = np.sum(val_loss_items) / len(val_loader)
             val_acc = np.sum(val_acc_items) / len(val_set)
@@ -257,10 +268,11 @@ def train(data_dir, model_dir, args):
             if val_acc > best_val_acc:
                 if best_accuracy_model_path is not None:
                     os.remove(best_accuracy_model_path)
+                best_val_acc = val_acc
                 best_accuracy_model_path = f"{save_dir}/Epoch{epoch}_accuracy.pth"
                 print(f"New best model for val accuracy : {val_acc:4.2%}! saving the best model..")
                 torch.save(model.module.state_dict(), best_accuracy_model_path)
-                best_val_acc = val_acc
+                
             
             torch.save(model.module.state_dict(), f"{save_dir}/last.pth")
             print(
@@ -292,6 +304,7 @@ if __name__ == '__main__':
     parser.add_argument('--model', type=str, default='BaseModel', help='model type (default: BaseModel)')
     parser.add_argument('--optimizer', type=str, default='SGD', help='optimizer type (default: SGD)')
     parser.add_argument('--lr', type=float, default=1e-3, help='learning rate (default: 1e-3)')
+    parser.add_argument('--lr_scheduler', type=str, default='StepLR', help='learning scheduler (default: StepLR)')
     parser.add_argument('--val_ratio', type=float, default=0.2, help='ratio for validaton (default: 0.2)')
     parser.add_argument('--criterion', type=str, default='cross_entropy', help='criterion type (default: cross_entropy)')
     parser.add_argument('--lr_decay_step', type=int, default=20, help='learning rate scheduler deacy step (default: 20)')
@@ -307,7 +320,7 @@ if __name__ == '__main__':
     
     config = utils.read_json(args.config)
     args = utils.update_argument(args, config['train'])
-    pprint(args)
+    pprint(vars(args))
     
     data_dir = args.data_dir
     model_dir = args.model_dir
