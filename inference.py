@@ -7,7 +7,8 @@ import torch
 from torch.utils.data import DataLoader
 
 from dataset import TestDataset, MaskBaseDataset
-
+import utils
+from pprint import pprint
 
 def load_model(saved_model, num_classes, device):
     model_cls = getattr(import_module("model"), args.model)
@@ -19,8 +20,7 @@ def load_model(saved_model, num_classes, device):
     # tar = tarfile.open(tarpath, 'r:gz')
     # tar.extractall(path=saved_model)
 
-    model_path = os.path.join(saved_model, 'Epoch40_accuracy.pth')
-    model.load_state_dict(torch.load(model_path, map_location=device))
+    model.load_state_dict(torch.load(saved_model, map_location=device))
 
     return model
 
@@ -72,17 +72,22 @@ if __name__ == '__main__':
     parser.add_argument('--batch_size', type=int, default=1000, help='input batch size for validing (default: 1000)')
     parser.add_argument("--resize", nargs="+", type=int, default=[128, 96], help='resize size for image when you trained (default: (96, 128))')
     parser.add_argument('--model', type=str, default='BaseModel', help='model type (default: BaseModel)')
-
+    parser.add_argument('--config', default='./configs/model_config.json', help='config.json file')
+    
     # Container environment
     parser.add_argument('--data_dir', type=str, default=os.environ.get('SM_CHANNEL_EVAL', '/opt/ml/input/data/eval'))
-    parser.add_argument('--model_dir', type=str, default=os.environ.get('SM_CHANNEL_MODEL', './model'))
-    parser.add_argument('--output_dir', type=str, default=os.environ.get('SM_OUTPUT_DATA_DIR', './output'))
+    parser.add_argument('--model_path', type=str, default=os.environ.get('SM_CHANNEL_MODEL', './model'))
+    parser.add_argument('--output_path', type=str, default=os.environ.get('SM_OUTPUT_DATA_DIR', './output'))
 
     args = parser.parse_args()
-
+    
+    config = utils.read_json(args.config)
+    args = utils.update_argument(args, config['inference'])
+    pprint(vars(args))
+    
     data_dir = args.data_dir
-    model_dir = args.model_dir
-    output_dir = args.output_dir
+    model_dir = args.model_path
+    output_dir = args.output_path
 
     os.makedirs(output_dir, exist_ok=True)
 

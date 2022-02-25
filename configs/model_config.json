@@ -28,5 +28,13 @@
         "data_dir": "/opt/ml/input/data/train/images",
         "model_path": "./model/exp21/Epoch40_accuracy.pth",
         "output_path": "./model/exp21"
+    },
+     "inference" : {
+        "batch_size": 500,
+        "resize": [224,224],
+        "model": "ConvNextIn22ft1k",
+        "data_dir": "/opt/ml/input/data/eval",
+        "model_path": "./model/exp27/Epoch1_f1_score.pth",
+        "output_path": "./inference"
     }
 }
