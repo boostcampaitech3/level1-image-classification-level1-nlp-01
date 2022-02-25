@@ -10,6 +10,7 @@
         "model": "ConvNextIn22ft1k",
         "optimizer": "Adam",
         "lr": 1e-4,
+        "lr_scheduler": "CosineAnnealingLR",
         "val_ratio": 0.2,
         "criterion": "cross_entropy",
         "lr_decay_step": 20,
