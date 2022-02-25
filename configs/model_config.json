@@ -1,0 +1,31 @@
+{
+    "train" : {
+        "seed": 42,
+        "epochs": 50,
+        "dataset": "MaskSplitByProfileDataset",
+        "augmentation": "CustomAugmentation",
+        "resize": [224,224],
+        "batch_size": 64,
+        "valid_batch_size": 128,
+        "model": "ConvNextIn22ft1k",
+        "optimizer": "Adam",
+        "lr": 1e-4,
+        "val_ratio": 0.2,
+        "criterion": "cross_entropy",
+        "lr_decay_step": 20,
+        "log_interval": 20,
+        "data_dir": "/opt/ml/input/data/train/images",
+        "model_dir": "./model"
+    },
+    "valid" : {
+        "seed": 42,
+        "batch_size": 500,
+        "resize": [224,224],
+        "model": "ConvNextIn22ft1k",
+        "dataset": "MaskSplitByProfileDataset",
+        "augmentation": "CustomAugmentation",
+        "data_dir": "/opt/ml/input/data/train/images",
+        "model_path": "./model/exp21/Epoch40_accuracy.pth",
+        "output_path": "./model/exp21"
+    }
+}
