@@ -1,0 +1,24 @@
+{
+    "seed": 42,
+    "epochs": 20,
+    "dataset": "MaskSplitByProfileDataset",
+    "augmentation": "CustomAugmentation",
+    "resize": [
+        224,
+        224
+    ],
+    "batch_size": 64,
+    "valid_batch_size": 128,
+    "model": "Efficientnet_B0",
+    "optimizer": "Adam",
+    "lr": 0.0001,
+    "lr_scheduler": "CosineAnnealingLR",
+    "val_ratio": 0.2,
+    "criterion": "cross_entropy",
+    "lr_decay_step": 20,
+    "log_interval": 20,
+    "name": "exp",
+    "config": "./configs/model_config.json",
+    "data_dir": "/opt/ml/input/data/train/images",
+    "model_dir": "./model"
+}

@@ -53,12 +53,12 @@ class AddGaussianNoise(object):
 class CustomAugmentation:
     def __init__(self, resize, mean, std, **args):
         self.transform = transforms.Compose([
-            CenterCrop((320, 256)),
             Resize(resize, Image.BILINEAR),
             ColorJitter(0.1, 0.1, 0.1, 0.1),
+            CenterCrop((384, int(384*0.8))),
+            # AddGaussianNoise(),
             ToTensor(),
-            Normalize(mean=mean, std=std),
-            AddGaussianNoise()
+            Normalize(mean=(0.5, 0.5, 0.5), std=(0.2, 0.2, 0.2)),
         ])
 
     def __call__(self, image):
@@ -98,9 +98,9 @@ class AgeLabels(int, Enum):
         except Exception:
             raise ValueError(f"Age value should be numeric, {value}")
 
-        if value < 30:
+        if value < 29:
             return cls.YOUNG
-        elif value < 60:
+        elif value < 59:
             return cls.MIDDLE
         else:
             return cls.OLD
@@ -354,8 +354,11 @@ class TestDataset(Dataset):
         self.img_paths = img_paths
         self.transform = transforms.Compose([
             Resize(resize, Image.BILINEAR),
+            ColorJitter(0.1, 0.1, 0.1, 0.1),
+            CenterCrop((384, int(384*0.8))),
+            # AddGaussianNoise(),
             ToTensor(),
-            Normalize(mean=mean, std=std),
+            Normalize(mean=(0.5, 0.5, 0.5), std=(0.2, 0.2, 0.2)),
         ])
 
     def __getitem__(self, index):

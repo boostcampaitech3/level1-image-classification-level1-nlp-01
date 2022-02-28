@@ -101,6 +101,14 @@ class Efficientnet_B0(nn.Module):
     def forward(self, x):
         x = self.model(x)
         return x
+class Efficientnet_B4(nn.Module):
+    def __init__(self, num_classes):
+        super(Efficientnet_B4, self).__init__()
+        self.model = timm.create_model('efficientnet_b4', pretrained=True, num_classes=num_classes)
+    
+    def forward(self, x):
+        x = self.model(x)
+        return x
 
 class VitBase(nn.Module):
     def __init__(self, num_classes):
@@ -243,6 +251,15 @@ class Resnet152(nn.Module):
     def __init__(self, num_classes):
         super().__init__()
         self.model = models.resnet152(pretrained = True)
+        self.model = change_last_layer(self.model, num_classes)
+    
+    def forward(self, x):
+        x = self.model(x)
+        return x
+class Resnet50(nn.Module):
+    def __init__(self, num_classes):
+        super().__init__()
+        self.model = models.resnet50(pretrained = True)
         self.model = change_last_layer(self.model, num_classes)
     
     def forward(self, x):

@@ -245,14 +245,9 @@ def train(data_dir, model_dir, args):
             f1_pred = f1_pred.cpu().numpy()
             
             f1_macro = f1_score(f1_labels, f1_pred, average='macro')
-<<<<<<< HEAD
+
             
             if f1_macro > best_f1_score:
-                
-=======
-
-            if f1_macro > best_f1_score:
->>>>>>> main
                 if best_f1_score_model_path is not None:
                     os.remove(best_f1_score_model_path)
                 best_f1_score = f1_macro
