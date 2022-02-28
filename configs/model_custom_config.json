@@ -2,12 +2,12 @@
     "train" : {
         "seed": 42,
         "epochs": 50,
-        "dataset": "MaskSplitByProfileDataset",
+        "dataset": "ThreeWayStratifiedDataset",
         "augmentation": "CustomAugmentation",
         "resize": [224,224],
         "batch_size": 64,
         "valid_batch_size": 128,
-        "model": "ConvNextLIn22",
+        "model": "ConvNextLIn22Custom",
         "optimizer": "Adam",
         "lr": 1e-4,
         "lr_scheduler": "CosineAnnealingLR",
@@ -23,8 +23,8 @@
         "seed": 42,
         "batch_size": 500,
         "resize": [224,224],
-        "model": "ConvNextLIn22",
-        "dataset": "MaskSplitByProfileDataset",
+        "model": "ConvNextLIn22Custom",
+        "dataset": "ThreeWayMaskSplitByProfileDataset",
         "augmentation": "CustomAugmentation",
         "data_dir": "/opt/ml/input/data/train/images",
         "model_path": "",
@@ -34,9 +34,9 @@
         "batch_size": 500,
         "dataset": "CustomTestDataset",
         "resize": [224,224],
-        "model": "ConvNextLIn22ft1k",
+        "model": "ConvNextLIn22ft1kCustom",
         "data_dir": "/opt/ml/input/data/eval",
-        "model_path": "./model/exp36/Epoch10_f1_score.pth",
-        "output_path": "./model/exp36"
+        "model_path": "./model/exp35/Epoch7_f1_score.pth",
+        "output_path": "./model/exp35"
     }
 }
