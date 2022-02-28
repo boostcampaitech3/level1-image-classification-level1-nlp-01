@@ -97,7 +97,7 @@ def train(data_dir, model_dir, args):
     device = torch.device("cuda" if use_cuda else "cpu")
 
     # -- dataset
-    dataset_module = getattr(import_module("dataset"), args.dataset)  # default: BaseAugmentation
+    dataset_module = getattr(import_module("dataset"), args.dataset)
     dataset = dataset_module(
         data_dir=data_dir,
     )
@@ -114,6 +114,7 @@ def train(data_dir, model_dir, args):
 
     # -- data_loader
     train_set, val_set = dataset.split_dataset()
+    
 
     train_loader = DataLoader(
         train_set,
@@ -143,6 +144,7 @@ def train(data_dir, model_dir, args):
     # -- loss & metric
     criterion = create_criterion(args.criterion)  # default: cross_entropy
     opt_module = getattr(import_module("torch.optim"), args.optimizer)  # default: SGD
+
     optimizer = opt_module(
         filter(lambda p: p.requires_grad, model.parameters()),
         lr=args.lr,
@@ -165,6 +167,7 @@ def train(data_dir, model_dir, args):
     best_f1_score = 0
     best_f1_score_model_path = None
     best_accuracy_model_path = None
+    early_stopping = 0
     
     for epoch in range(args.epochs):
         # train loop
@@ -245,21 +248,21 @@ def train(data_dir, model_dir, args):
             f1_pred = f1_pred.cpu().numpy()
             
             f1_macro = f1_score(f1_labels, f1_pred, average='macro')
-<<<<<<< HEAD
             
+            if f1_macro <= best_f1_score:
+                early_stopping += 1
             if f1_macro > best_f1_score:
-                
-=======
-
-            if f1_macro > best_f1_score:
->>>>>>> main
+                early_stopping = 0
                 if best_f1_score_model_path is not None:
                     os.remove(best_f1_score_model_path)
                 best_f1_score = f1_macro
                 best_f1_score_model_path = f"{save_dir}/Epoch{epoch}_f1_score.pth"
                 print(f"New best model for val f1_score : {best_f1_score:4.2%}! saving the best model..")
                 torch.save(model.module.state_dict(), best_f1_score_model_path)
-                
+                args.best_f1_score = best_f1_score
+                args.best_f1_epoch = epoch
+                with open(os.path.join(save_dir, 'config.json'), 'w', encoding='utf-8') as f:
+                    json.dump(vars(args), f, ensure_ascii=False, indent=4)
             
             val_loss = np.sum(val_loss_items) / len(val_loader)
             val_acc = np.sum(val_acc_items) / len(val_set)
@@ -272,17 +275,25 @@ def train(data_dir, model_dir, args):
                 best_accuracy_model_path = f"{save_dir}/Epoch{epoch}_accuracy.pth"
                 print(f"New best model for val accuracy : {val_acc:4.2%}! saving the best model..")
                 torch.save(model.module.state_dict(), best_accuracy_model_path)
+                args.best_val_acc = best_val_acc
+                args.best_val_epoch = epoch
+                with open(os.path.join(save_dir, 'config.json'), 'w', encoding='utf-8') as f:
+                    json.dump(vars(args), f, ensure_ascii=False, indent=4)
                 
             
             torch.save(model.module.state_dict(), f"{save_dir}/last.pth")
             print(
                 f"[Val] acc : {val_acc:4.2%}, loss: {val_loss:4.2} || "
-                f"[Val] f1_macro : {f1_macro:4.2%} || "
-                f"best acc : {best_val_acc:4.2%}, best loss: {best_val_loss:4.2}"
+                f"[Val] f1_macro : {f1_macro:4.2%} \n"
+                f"best acc : {best_val_acc:4.2%}, best_f1_score: {best_f1_score:4.2}, best loss: {best_val_loss:4.2}"
             )
             logger.add_scalar("Val/loss", val_loss, epoch)
             logger.add_scalar("Val/accuracy", val_acc, epoch)
             logger.add_figure("results", figure, epoch)
+            if early_stopping == args.early_stopping:
+                print(f'Early Stopping -- f1 macro score not improved for {early_stopping} consecutive epochs..')
+                print(f'Terminate Training')
+                exit()
             print()
 
 
@@ -311,7 +322,8 @@ if __name__ == '__main__':
     parser.add_argument('--log_interval', type=int, default=20, help='how many batches to wait before logging training status')
     parser.add_argument('--name', default='exp', help='model save at {SM_MODEL_DIR}/{name}')
     parser.add_argument('--config', default='./configs/model_config.json', help='config.json file')
-
+    parser.add_argument('--early_stopping', type=int, default=5, help='early stopping on validation f-score')
+    
     # Container environment
     parser.add_argument('--data_dir', type=str, default=os.environ.get('SM_CHANNEL_TRAIN', '/opt/ml/input/data/train/images'))
     parser.add_argument('--model_dir', type=str, default=os.environ.get('SM_MODEL_DIR', './model'))

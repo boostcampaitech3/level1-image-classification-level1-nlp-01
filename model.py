@@ -4,6 +4,18 @@ import torch.nn.functional as F
 
 import timm
 import torchvision.models as models
+from efficientnet_pytorch import EfficientNet
+
+# effiecientnet 'efficientnet-b4' test
+class effiecientnet_test(nn.Module):
+    def __init__(self, num_classes):
+        super().__init__()
+        self.model = EfficientNet.from_pretrained('efficientnet-b4', num_classes)
+
+    def forward(self, x):
+        x = self.model(x)
+        return x
+
 
 class BaseModel(nn.Module):
     def __init__(self, num_classes):
@@ -56,6 +68,69 @@ class MyModel(nn.Module):
     
 # timm library models
 # Refactoring Needed
+
+class ConvNextLIn22ft1kCustom(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.model = timm.create_model('convnext_large_in22ft1k', pretrained=True, num_classes = 1000)
+        self.dropout = nn.Dropout(0.5)
+        self.dropouts = nn.ModuleList([
+                    nn.Dropout(0.5) for _ in range(5)])
+        self.age_layer = nn.Linear(in_features=1000, out_features=3, bias=True)
+        self.mask_layer = nn.Linear(in_features=1000, out_features=3, bias=True)
+        self.sex_layer = nn.Linear(in_features=1000, out_features=2, bias=True)
+    
+    def forward(self, x):
+        x = self.model(x)
+        x_ = self.dropout(x)
+        
+        for i, dropout in enumerate(self.dropouts):
+            if i==0:
+                x_age = self.age_layer(dropout(x_))
+                x_mask = self.mask_layer(dropout(x_))
+                x_sex = self.sex_layer(dropout(x_))
+            else:
+                x_age += self.age_layer(dropout(x_))
+                x_mask += self.mask_layer(dropout(x_))
+                x_sex += self.sex_layer(dropout(x_))
+        else:
+            x_age /= len(self.dropouts)
+            x_mask /= len(self.dropouts)
+            x_sex /= len(self.dropouts)
+        
+        return x_age, x_mask, x_sex
+    
+class ConvNextLIn22Custom(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.model = timm.create_model('convnext_large_in22k', pretrained=True, num_classes = 1536)
+        self.dropout = nn.Dropout(0.5)
+        self.dropouts = nn.ModuleList([
+                    nn.Dropout(0.5) for _ in range(5)])
+        self.age_layer = nn.Linear(in_features=1536, out_features=3, bias=True)
+        self.mask_layer = nn.Linear(in_features=1536, out_features=3, bias=True)
+        self.sex_layer = nn.Linear(in_features=1536, out_features=2, bias=True)
+    
+    def forward(self, x):
+        x = self.model(x)
+        x_ = self.dropout(x)
+        
+        for i, dropout in enumerate(self.dropouts):
+            if i==0:
+                x_age = self.age_layer(dropout(x_))
+                x_mask = self.mask_layer(dropout(x_))
+                x_sex = self.sex_layer(dropout(x_))
+            else:
+                x_age += self.age_layer(dropout(x_))
+                x_mask += self.mask_layer(dropout(x_))
+                x_sex += self.sex_layer(dropout(x_))
+        else:
+            x_age /= len(self.dropouts)
+            x_mask /= len(self.dropouts)
+            x_sex /= len(self.dropouts)
+        
+        return x_age, x_mask, x_sex
+
 class CoatLiteMini(nn.Module):
     def __init__(self, num_classes):
         super().__init__()
@@ -65,25 +140,26 @@ class CoatLiteMini(nn.Module):
         x = self.model(x)
         return x
 
-class ConvNext(nn.Module):
+class ConvNextLIn22ft1k(nn.Module):
     def __init__(self, num_classes):
         super().__init__()
-        self.model = timm.create_model('convnext_large', pretrained=True, num_classes=num_classes)
+        self.model = timm.create_model('convnext_large_in22ft1k', pretrained=True, num_classes=num_classes)
     
     def forward(self, x):
         x = self.model(x)
         return x
 
-class ConvNext(nn.Module):
+class ConvNextLIn22(nn.Module):
+
     def __init__(self, num_classes):
         super().__init__()
-        self.model = timm.create_model('convnext_large', pretrained=True, num_classes=num_classes)
+        self.model = timm.create_model('convnext_large_in22k', pretrained=True, num_classes=num_classes)
     
     def forward(self, x):
         x = self.model(x)
-        return x
-    
-class ConvNextIn22ft1k(nn.Module):
+        return x    
+ 
+class ConvNextBIn22ft1k(nn.Module):
 
     def __init__(self, num_classes):
         super().__init__()
