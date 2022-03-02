@@ -54,7 +54,7 @@ def inference(data_dir, model_dir, output_dir, args):
         drop_last=False,
     )
 
-    print("Calculating inference results..")
+    log_logger.info("Calculating inference results..")
     preds = []
     with torch.no_grad():
         for idx, images in enumerate(loader):
@@ -66,7 +66,7 @@ def inference(data_dir, model_dir, output_dir, args):
     info['ans'] = preds
     exp_name = output_dir.split('/')[-1]
     info.to_csv(os.path.join(output_dir, f'{exp_name}_output.csv'), index=False)
-    print(f'Inference Done!')
+    log_logger.info(f'== Inference Done! ==')
 
 
 if __name__ == '__main__':
@@ -84,15 +84,21 @@ if __name__ == '__main__':
     parser.add_argument('--model_path', type=str, default=os.environ.get('SM_CHANNEL_MODEL', './model'))
     parser.add_argument('--output_path', type=str, default=os.environ.get('SM_OUTPUT_DATA_DIR', './output'))
 
-    args = parser.parse_args()
-    
+    args = parser.parse_args()    
     config = utils.read_json(args.config)
-    args = utils.update_argument(args, config['inference'])
-    pprint(vars(args))
+    parser.set_defaults(**config['inference'])
+    args = parser.parse_args()
     
     data_dir = args.data_dir
     model_dir = args.model_path
     output_dir = args.output_path
+    
+    # Setting up Logger
+    log_logger = logging.getLogger(__name__)
+    utils.setup_logging(output_dir, __file__)
+    log_logger.info('Inference Parameters') 
+    log_logger.info(json.dumps(vars(args), indent=4))
+    log_logger.info('== Start Inference ==')
 
     os.makedirs(output_dir, exist_ok=True)
 
