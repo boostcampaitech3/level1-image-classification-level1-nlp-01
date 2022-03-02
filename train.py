@@ -45,7 +45,7 @@ def grid_image(np_images, gts, preds, n=16, shuffle=False):
     choices = random.choices(range(batch_size), k=n) if shuffle else list(range(n))
     figure = plt.figure(figsize=(12, 18 + 2))  # cautions: hardcoded, 이미지 크기에 따라 figsize 를 조정해야 할 수 있습니다. T.T
     plt.subplots_adjust(top=0.8)               # cautions: hardcoded, 이미지 크기에 따라 top 를 조정해야 할 수 있습니다. T.T
-    n_grid = np.ceil(n ** 0.5)
+    n_grid = int(np.ceil(n ** 0.5))
     tasks = ["mask", "gender", "age"]
     for idx, choice in enumerate(choices):
         gt = gts[choice].item()
@@ -245,14 +245,8 @@ def train(data_dir, model_dir, args):
             f1_pred = f1_pred.cpu().numpy()
             
             f1_macro = f1_score(f1_labels, f1_pred, average='macro')
-<<<<<<< HEAD
-            
-            if f1_macro > best_f1_score:
-                
-=======
 
             if f1_macro > best_f1_score:
->>>>>>> main
                 if best_f1_score_model_path is not None:
                     os.remove(best_f1_score_model_path)
                 best_f1_score = f1_macro
@@ -313,7 +307,7 @@ if __name__ == '__main__':
     parser.add_argument('--config', default='./configs/model_config.json', help='config.json file')
 
     # Container environment
-    parser.add_argument('--data_dir', type=str, default=os.environ.get('SM_CHANNEL_TRAIN', '/opt/ml/input/data/train/images'))
+    parser.add_argument('--data_dir', type=str, default=os.environ.get('SM_CHANNEL_TRAIN', './input/data/train/images'))
     parser.add_argument('--model_dir', type=str, default=os.environ.get('SM_MODEL_DIR', './model'))
 
     args = parser.parse_args()

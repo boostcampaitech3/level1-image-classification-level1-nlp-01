@@ -4,6 +4,9 @@ import torch.nn.functional as F
 
 import timm
 import torchvision.models as models
+from efficientnet_pytorch import EfficientNet
+from torchensemble.utils.logging import set_logger
+from torchensemble import BaggingClassifier
 
 class BaseModel(nn.Module):
     def __init__(self, num_classes):
@@ -53,9 +56,80 @@ class MyModel(nn.Module):
         2. 결과로 나온 output 을 return 해주세요
         """
         return x
+
+class EnsembleModel(nn.Module):
+    def __init__(self, model, n_estimators, cuda, criterion, optimizer, scheduler):
+        super().__init__()
+
+        self.model = model
+        self.n_estimators = n_estimators
+        self.cuda = cuda
+        self.criterion = criterion
+        self.optimizer = optimizer
+        self.scheduler = scheduler
+        self.ensemble_classifier = BaggingClassifier(estimator=self.model,\
+                                                     n_estimators=self.n_estimators,
+                                                     cuda=self.cuda)
+    
+    def forward(self, x):
+        x = self.ensemble_classifier(x)
     
 # timm library models
 # Refactoring Needed
+
+class Efficientnet_B4(nn.Module):
+    def __init__(self, num_classes):
+        super().__init__()
+        self.model = EfficientNet.from_pretrained('efficientnet-b4', num_classes=num_classes)
+        
+    def forward(self, x):
+        x = self.model(x)
+        return x
+
+class ThreeWayNet(nn.Module):
+    def __init__(self, num_classes):
+        super().__init__()
+        self.model = nn.ModuleList([models.resnet50(pretrained=True),
+                                    models.resnet50(pretrained=True),
+                                    EfficientNet.from_pretrained('efficientnet-b4', num_classes=3)])
+        self.model[0] = change_last_layer(self.model[0], 3)
+        self.model[1] = change_last_layer(self.model[1], 2)
+
+    def forward(self, x):
+        labels = [self.model[i](x) for i in range(3)]
+        return labels
+
+class ThreeWayEfficientnet_B0(nn.Module):
+    def __init__(self, num_classes):
+        super().__init__()
+        self.model = nn.ModuleList([EfficientNet.from_pretrained('efficientnet-b0', num_classes=3),
+                                    EfficientNet.from_pretrained('efficientnet-b0', num_classes=2),
+                                    EfficientNet.from_pretrained('efficientnet-b0', num_classes=3)])
+        
+    def forward(self, x):
+        labels = [self.model[i](x) for i in range(3)]
+        return labels
+
+class ThreeWayEfficientnet_B4(nn.Module):
+    def __init__(self, num_classes):
+        super().__init__()
+        self.model = nn.ModuleList([timm.create_model('efficientnet_b4', pretrained=True, num_classes=3),
+                                    timm.create_model('efficientnet_b4', pretrained=True, num_classes=2),
+                                    timm.create_model('efficientnet_b4', pretrained=True, num_classes=3)])
+        
+    def forward(self, x):
+        labels = [self.model[i](x) for i in range(3)]
+        return labels
+
+class CoatMini(nn.Module):
+    def __init__(self, num_classes):
+        super().__init__()
+        self.model = timm.create_model('coat_mini', pretrained=True, num_classes=num_classes)
+    
+    def forward(self, x):
+        x = self.model(x)
+        return x
+
 class CoatLiteMini(nn.Module):
     def __init__(self, num_classes):
         super().__init__()
@@ -102,6 +176,15 @@ class Efficientnet_B0(nn.Module):
         x = self.model(x)
         return x
 
+class Efficientnet_B7(nn.Module):
+    def __init__(self, num_classes):
+        super().__init__()
+        self.model = EfficientNet.from_pretrained('efficientnet-b7', num_classes=num_classes)
+        
+    def forward(self, x):
+        x = self.model(x)
+        return x
+
 class VitBase(nn.Module):
     def __init__(self, num_classes):
         super(Efficientnet_B0, self).__init__()
@@ -122,16 +205,7 @@ class VitLarge(nn.Module):
     
 class SWSResnext(nn.Module):
     def __init__(self, num_classes):
-        super(SWSRexnext, self).__init__()
-        self.model = timm.create_model('swsl_resnext50_32x4d', pretrained = True, num_classes = num_classes)
-        
-    def forward(self, x):
-        x = self.model
-        return x
-    
-class SWSResnext(nn.Module):
-    def __init__(self, num_classes):
-        super(SWSRexnext, self).__init__()
+        super(SWSResnext, self).__init__()
         self.model = timm.create_model('swsl_resnext50_32x4d', pretrained = True, num_classes = num_classes)
         
     def forward(self, x):
@@ -159,7 +233,7 @@ class SwinLarge(nn.Module):
 class CaiT(nn.Module):
     def __init__(self, num_classes):
         super(CaiT, self).__init__()
-        self.model = timm.create_model('cait_s24_224', pretrained=True, num_classes=num_classes)
+        self.model = timm.create_model('cait_xxs36_224', pretrained=True, num_classes=num_classes)
         
     def forward(self, x):
         x = self.model(x)

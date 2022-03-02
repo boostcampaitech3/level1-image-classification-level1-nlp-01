@@ -24,15 +24,6 @@ def load_model(saved_model, num_classes, device):
 
     return model
 
-def str2bool(istrue : str) -> bool:
-    istrue = istrue.lower()
-    if istrue == "true":
-        return True
-    elif istrue == "false":
-        return False
-    else:
-        raise Exception("Please enter 'True' or 'False'")
-
 @torch.no_grad()
 def inference(data_dir, model_dir, output_dir, args):
     """
@@ -41,16 +32,8 @@ def inference(data_dir, model_dir, output_dir, args):
     device = torch.device("cuda" if use_cuda else "cpu")
 
     num_classes = MaskBaseDataset.num_classes  # 18
-    args.ensemble = str2bool(args.ensemble)
-    if args.ensemble:
-        from torchensemble import BaggingClassifier
-        from torchensemble.utils import io
-        model_cls = getattr(import_module("model"), args.model)(num_classes=num_classes)
-        model = BaggingClassifier(estimator=model_cls, n_estimators=args.n_estimators)
-        io.load(model, args.model_path)
-    else:
-        model = load_model(model_dir, num_classes, device).to(device)
-        model.eval()
+    model = load_model(model_dir, num_classes, device).to(device)
+    model.eval()
 
     img_root = os.path.join(data_dir, 'images')
     info_path = os.path.join(data_dir, 'info.csv')
@@ -70,18 +53,12 @@ def inference(data_dir, model_dir, output_dir, args):
     print("Calculating inference results..")
     preds = []
     with torch.no_grad():
-        if args.ensemble:
-            for idx, images in enumerate(loader):
-                images = images.to(device)
-                pred = model.predict(images)
-                pred = pred.argmax(dim=-1)
-                preds.extend(pred.cpu().numpy())
-        else:
-            for idx, images in enumerate(loader):
-                images = images.to(device)
-                pred = model(images)
-                pred = pred.argmax(dim=-1)
-                preds.extend(pred.cpu().numpy())
+        for idx, images in enumerate(loader):
+            images = images.to(device)
+            pred = model(images)
+            pred = [_pred.argmax(dim=-1) for _pred in pred]
+            pred = MaskBaseDataset.encode_multi_class(pred[0], pred[1], pred[2])
+            preds.extend(pred.cpu().numpy())
 
     info['ans'] = preds
     info.to_csv(os.path.join(output_dir, f'output.csv'), index=False)
@@ -96,8 +73,6 @@ if __name__ == '__main__':
     parser.add_argument("--resize", nargs="+", type=int, default=[128, 96], help='resize size for image when you trained (default: (96, 128))')
     parser.add_argument('--model', type=str, default='BaseModel', help='model type (default: BaseModel)')
     parser.add_argument('--config', default='./configs/model_config.json', help='config.json file')
-    parser.add_argument('--ensemble', default='True', help='config.json file')
-    parser.add_argument('--n_estimators', type=int, default=5, help='config.json file')
     
     # Container environment
     parser.add_argument('--data_dir', type=str, default=os.environ.get('SM_CHANNEL_EVAL', '/opt/ml/input/data/eval'))

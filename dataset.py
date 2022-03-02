@@ -53,12 +53,11 @@ class AddGaussianNoise(object):
 class CustomAugmentation:
     def __init__(self, resize, mean, std, **args):
         self.transform = transforms.Compose([
-            CenterCrop((320, 256)),
+            CenterCrop((384, (int)(384 * 0.8))),
             Resize(resize, Image.BILINEAR),
-            ColorJitter(0.1, 0.1, 0.1, 0.1),
+            RandomHorizontalFlip(),
             ToTensor(),
-            Normalize(mean=mean, std=std),
-            AddGaussianNoise()
+            Normalize(mean=mean, std=std)
         ])
 
     def __call__(self, image):
@@ -100,7 +99,7 @@ class AgeLabels(int, Enum):
 
         if value < 30:
             return cls.YOUNG
-        elif value < 60:
+        elif value < 58:
             return cls.MIDDLE
         else:
             return cls.OLD
@@ -124,7 +123,7 @@ class MaskBaseDataset(Dataset):
     gender_labels = []
     age_labels = []
 
-    def __init__(self, data_dir, mean=(0.548, 0.504, 0.479), std=(0.237, 0.247, 0.246), val_ratio=0.2):
+    def __init__(self, data_dir, mean=(0.5602, 0.5241, 0.5015), std=(0.6166, 0.5872, 0.5683), val_ratio=0.2):
         self.data_dir = data_dir
         self.mean = mean
         self.std = std
@@ -164,7 +163,7 @@ class MaskBaseDataset(Dataset):
             print("[Warning] Calculating statistics... It can take a long time depending on your CPU machine")
             sums = []
             squared = []
-            for image_path in self.image_paths[:3000]:
+            for image_path in self.image_paths[:]:
                 image = np.array(Image.open(image_path)).astype(np.int32)
                 sums.append(image.mean(axis=(0, 1)))
                 squared.append((image ** 2).mean(axis=(0, 1)))
@@ -244,7 +243,7 @@ class MaskSplitByProfileDataset(MaskBaseDataset):
         이후 `split_dataset` 에서 index 에 맞게 Subset 으로 dataset 을 분기합니다.
     """
 
-    def __init__(self, data_dir, mean=(0.548, 0.504, 0.479), std=(0.237, 0.247, 0.246), val_ratio=0.2):
+    def __init__(self, data_dir, mean=(0.5602, 0.5241, 0.5015), std=(0.6166, 0.5872, 0.5683), val_ratio=0.2):
         self.indices = defaultdict(list)
         super().__init__(data_dir, mean, std, val_ratio)
 
@@ -293,12 +292,79 @@ class MaskSplitByProfileDataset(MaskBaseDataset):
     def split_dataset(self) -> List[Subset]:
         return [Subset(self, indices) for phase, indices in self.indices.items()]
 
+class ThreeWayMaskSplitByProfileDataset(MaskSplitByProfileDataset):
+    """
+        label이 3개로 나오도록 함
+    """
+    def __getitem__(self, index):
+        assert self.transform is not None, ".set_tranform 메소드를 이용하여 transform 을 주입해주세요"
+
+        image = self.read_image(index)
+        mask_label = self.get_mask_label(index)
+        gender_label = self.get_gender_label(index)
+        age_label = self.get_age_label(index)
+
+        image_transform = self.transform(image)
+        return image_transform, (mask_label, gender_label, age_label)
+
+class ThreeWayStratifiedSplitByProfileDataset(MaskSplitByProfileDataset):
+    """
+        label이 3개로 나오도록 함
+        추가로 노인 연령대 데이터 전부를 train으로 몰아놓도록 만듬
+    """   
+    def setup(self):
+        profiles = os.listdir(self.data_dir)
+        indice = 0
+        for profile in profiles:
+            if profile.startswith("."):  # "." 로 시작하는 파일은 무시합니다
+                continue
+
+            img_folder = os.path.join(self.data_dir, profile)
+            for file_name in os.listdir(img_folder):
+                _file_name, ext = os.path.splitext(file_name)
+                if _file_name not in self._file_names:  # "." 로 시작하는 파일 및 invalid 한 파일들은 무시합니다
+                    continue
+
+                img_path = os.path.join(self.data_dir, profile, file_name)  # (resized_data, 000004_male_Asian_54, mask1.jpg)
+                mask_label = self._file_names[_file_name]
+
+                id, gender, race, age = profile.split("_")
+                gender_label = GenderLabels.from_str(gender)
+                age_label = AgeLabels.from_number(age)
+
+                self.image_paths.append(img_path)
+                self.mask_labels.append(mask_label)
+                self.gender_labels.append(gender_label)
+                self.age_labels.append(age_label)
+                
+                multi_class_label = self.encode_multi_class(mask_label, gender_label, age_label)
+                self.multi_label_dict[multi_class_label].append(indice)
+                indice += 1
+
+    def split_dataset(self) -> Tuple[Subset, Subset]:
+        train_indices = []
+        val_indices = []
+
+        for key, value in self.multi_label_dict.items():
+            n_val = int(len(value) * self.val_ratio)
+            random.shuffle(value)
+            key_val_indices = value[:n_val]
+            key_train_indices = value[n_val:]
+
+            val_indices += key_val_indices
+            train_indices += key_train_indices
+            
+            random.shuffle(val_indices)
+            random.shuffle(train_indices)
+            
+        return Subset(self, train_indices), Subset(self, val_indices)
+
     
 class MaskStratifiedDataset(MaskBaseDataset):
     """
         target class에 proportional 하게 train/val set을 나눔
     """
-    def __init__(self, data_dir, mean=(0.548, 0.504, 0.479), std=(0.237, 0.247, 0.246), val_ratio=0.2):
+    def __init__(self, data_dir, mean=(0.5602, 0.5241, 0.5015), std=(0.6166, 0.5872, 0.5683), val_ratio=0.2):
         self.multi_label_dict = defaultdict(list)
         super().__init__(data_dir, mean, std, val_ratio)
 
@@ -350,12 +416,19 @@ class MaskStratifiedDataset(MaskBaseDataset):
         return Subset(self, train_indices), Subset(self, val_indices)
 
 class TestDataset(Dataset):
-    def __init__(self, img_paths, resize, mean=(0.548, 0.504, 0.479), std=(0.237, 0.247, 0.246)):
+    def __init__(self, img_paths, resize, mean=(0.5602, 0.5241, 0.5015), std=(0.6166, 0.5872, 0.5683)):
         self.img_paths = img_paths
-        self.transform = transforms.Compose([
+        '''self.transform = self.transform = transforms.Compose([
+            CenterCrop((384, (int)(384 * 0.8))),
             Resize(resize, Image.BILINEAR),
             ToTensor(),
             Normalize(mean=mean, std=std),
+        ])'''
+        self.transform = transforms.Compose([
+            CenterCrop((384, (int)(384 * 0.8))),
+            Resize(resize, Image.BILINEAR),
+            ToTensor(),
+            Normalize(mean=mean, std=std)
         ])
 
     def __getitem__(self, index):
@@ -367,3 +440,7 @@ class TestDataset(Dataset):
 
     def __len__(self):
         return len(self.img_paths)
+
+if __name__ == "__main__":
+    dataset = MaskBaseDataset('./input/data/train/images', mean=None, std=None)
+    print(f"mean : {dataset.mean}, std : {dataset.std}")

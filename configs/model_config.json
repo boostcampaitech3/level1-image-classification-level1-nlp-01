@@ -1,40 +1,40 @@
 {
     "train" : {
         "seed": 42,
-        "epochs": 50,
-        "dataset": "MaskSplitByProfileDataset",
+        "epochs": 20,
+        "dataset": "ThreeWayMaskSplitByProfileDataset",
         "augmentation": "CustomAugmentation",
         "resize": [224,224],
         "batch_size": 64,
-        "valid_batch_size": 128,
-        "model": "ConvNextIn22ft1k",
+        "valid_batch_size": 64,
+        "model": "ThreeWayNet",
         "optimizer": "Adam",
         "lr": 1e-4,
-        "lr_scheduler": "CosineAnnealingLR",
+        "lr_scheduler": "MultiStepLR",
         "val_ratio": 0.2,
-        "criterion": "cross_entropy",
+        "criterion": "f1",
         "lr_decay_step": 20,
         "log_interval": 20,
-        "data_dir": "/opt/ml/input/data/train/images",
+        "data_dir": "./input/data/train/images",
         "model_dir": "./model"
     },
     "valid" : {
         "seed": 42,
-        "batch_size": 500,
+        "batch_size": 64,
         "resize": [224,224],
-        "model": "ConvNextIn22ft1k",
+        "model": "Efficientnet_B0",
         "dataset": "MaskSplitByProfileDataset",
         "augmentation": "CustomAugmentation",
-        "data_dir": "/opt/ml/input/data/train/images",
-        "model_path": "./model/exp21/Epoch40_accuracy.pth",
-        "output_path": "./model/exp21"
+        "data_dir": "./input/data/train/images",
+        "model_path": "./model/exp2/Epoch29_f1_score.pth",
+        "output_path": "./model/exp2"
     },
      "inference" : {
-        "batch_size": 500,
+        "batch_size": 64,
         "resize": [224,224],
-        "model": "ConvNextIn22ft1k",
-        "data_dir": "/opt/ml/input/data/eval",
-        "model_path": "./model/exp27/Epoch1_f1_score.pth",
+        "model": "ThreeWayNet",
+        "data_dir": "./input/data/eval",
+        "model_path": "./model/exp4/Epoch7_Age_accuracy.pth",
         "output_path": "./inference"
     }
 }
