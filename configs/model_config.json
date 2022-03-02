@@ -3,27 +3,31 @@
         "seed": 42,
         "epochs": 50,
         "dataset": "MaskSplitByProfileDataset",
-        "augmentation": "CustomAugmentation",
+        "augmentation": "BasicAugmentation2",
         "resize": [224,224],
         "batch_size": 64,
         "valid_batch_size": 128,
-        "model": "ConvNextLIn22",
+        "model": "EfficientNet",
         "optimizer": "Adam",
         "lr": 1e-4,
-        "lr_scheduler": "CosineAnnealingLR",
+        "lr_scheduler": "MultiStepLR",
+        "lr_sch_params" : {
+            "milestones" : [2,4,6,8],
+            "gamma" : 0.5
+         },
         "val_ratio": 0.2,
         "criterion": "cross_entropy",
         "lr_decay_step": 20,
         "log_interval": 20,
         "data_dir": "/opt/ml/input/data/train/images",
         "model_dir": "./model",
-        "early_stopping" : 5
+        "early_stopping" : 5 
     },
     "valid" : {
         "seed": 42,
         "batch_size": 500,
         "resize": [224,224],
-        "model": "ConvNextLIn22",
+        "model": "EfficientNet",
         "dataset": "MaskSplitByProfileDataset",
         "augmentation": "CustomAugmentation",
         "data_dir": "/opt/ml/input/data/train/images",
@@ -32,11 +36,11 @@
     },
      "inference" : {
         "batch_size": 500,
-        "dataset": "CustomTestDataset",
+        "dataset": "BasicTestDataset2",
         "resize": [224,224],
-        "model": "ConvNextLIn22ft1k",
+        "model": "EfficientNet",
         "data_dir": "/opt/ml/input/data/eval",
-        "model_path": "./model/exp36/Epoch10_f1_score.pth",
-        "output_path": "./model/exp36"
+        "model_path": "./model/exp51/",
+        "output_path": "./model/exp51"
     }
 }
