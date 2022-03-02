@@ -1,4 +1,4 @@
 .DS_Store
-comp*.ipynb
+comp*
 Data*.ipynb
 parser.py.ipynb
