@@ -88,6 +88,24 @@ class CustomAugmentation:
 
     def __call__(self, image):
         return self.transform(image)
+    
+class CustomAugmentationRes:
+    def __init__(self, resize, mean, std, **args):
+        self.transform = transforms.Compose([
+            Resize(resize, Image.BILINEAR),
+            ColorJitter(0.1, 0.1, 0.1, 0.1),
+            # AddGaussianNoise(),
+            CenterCrop((384, int(384*0.8))),
+            RandomGrayscale(p=0.1),
+            ToTensor(),
+            # Normalize(mean=(0.5, 0.5, 0.5), std=(0.2, 0.2, 0.2)),
+            # Normalize(mean=(0.5602, 0.5241, 0.5015), std=(0.6166, 0.5872, 0.5683)),
+            Normalize(mean=(0.485,0.456,0.406), std=(0.229,0.224,0.225)),
+            # Normalize(mean=(0.548, 0.504, 0.479), std=(0.237, 0.247, 0.246)),
+        ])
+
+    def __call__(self, image):
+        return self.transform(image)
 
 
 class MaskLabels(int, Enum):
@@ -123,9 +141,9 @@ class AgeLabels(int, Enum):
         except Exception:
             raise ValueError(f"Age value should be numeric, {value}")
 
-        if value < 30:
+        if value < 29:
             return cls.YOUNG
-        elif value < 60:
+        elif value < 59:
             return cls.MIDDLE
         else:
             return cls.OLD
@@ -318,6 +336,78 @@ class MaskSplitByProfileDataset(MaskBaseDataset):
     def split_dataset(self) -> List[Subset]:
         return [Subset(self, indices) for phase, indices in self.indices.items()]
 
+
+class OnlyAgeMaskSplitByProfileDataset(MaskSplitByProfileDataset):
+    num_classes = 3
+    """
+        train / val 나누는 기준을 이미지에 대해서 random 이 아닌
+        사람(profile)을 기준으로 나눕니다.
+        구현은 val_ratio 에 맞게 train / val 나누는 것을 이미지 전체가 아닌 사람(profile)에 대해서 진행하여 indexing 을 합니다
+        이후 `split_dataset` 에서 index 에 맞게 Subset 으로 dataset 을 분기합니다.
+    """
+
+    def __init__(self, data_dir, mean=(0.548, 0.504, 0.479), std=(0.237, 0.247, 0.246), val_ratio=0.2):
+        super().__init__(data_dir, mean, std, val_ratio)
+        self.num_classes = 3
+    
+    def __getitem__(self, index):
+        assert self.transform is not None, ".set_tranform 메소드를 이용하여 transform 을 주입해주세요"
+        
+        image = self.read_image(index)
+        age_label = self.get_age_label(index)
+        image_transform = self.transform(image)
+        
+        return image_transform, age_label
+    
+    
+class OnlyMaskMaskSplitByProfileDataset(MaskSplitByProfileDataset):
+    num_classes = 3
+    """
+        train / val 나누는 기준을 이미지에 대해서 random 이 아닌
+        사람(profile)을 기준으로 나눕니다.
+        구현은 val_ratio 에 맞게 train / val 나누는 것을 이미지 전체가 아닌 사람(profile)에 대해서 진행하여 indexing 을 합니다
+        이후 `split_dataset` 에서 index 에 맞게 Subset 으로 dataset 을 분기합니다.
+    """
+    def __init__(self, data_dir, mean=(0.548, 0.504, 0.479), std=(0.237, 0.247, 0.246), val_ratio=0.2):
+        self.num_classes = 3
+        super().__init__(data_dir, mean, std, val_ratio)
+    
+    def __getitem__(self, index):
+        assert self.transform is not None, ".set_tranform 메소드를 이용하여 transform 을 주입해주세요"
+        
+        image = self.read_image(index)
+        mask_label = self.get_mask_label(index)
+        image_transform = self.transform(image)
+        
+        return image_transform, mask_label
+    
+    
+class OnlyGenderMaskSplitByProfileDataset(MaskSplitByProfileDataset):
+    num_classes = 2
+    """
+        train / val 나누는 기준을 이미지에 대해서 random 이 아닌
+        사람(profile)을 기준으로 나눕니다.
+        구현은 val_ratio 에 맞게 train / val 나누는 것을 이미지 전체가 아닌 사람(profile)에 대해서 진행하여 indexing 을 합니다
+        이후 `split_dataset` 에서 index 에 맞게 Subset 으로 dataset 을 분기합니다.
+    """
+
+    def __init__(self, data_dir, mean=(0.548, 0.504, 0.479), std=(0.237, 0.247, 0.246), val_ratio=0.2):
+        self.indices = defaultdict(list)
+        self.num_classes = 2
+        super().__init__(data_dir, mean, std, val_ratio)
+    
+    def __getitem__(self, index):
+        assert self.transform is not None, ".set_tranform 메소드를 이용하여 transform 을 주입해주세요"
+        
+        image = self.read_image(index)
+        gender_label = self.get_gender_label(index)
+        image_transform = self.transform(image)
+        
+        return image_transform, gender_label
+    
+
+    
+    
     
 class MaskStratifiedDataset(MaskBaseDataset):
     """
@@ -589,6 +679,28 @@ class BasicTestDataset2(Dataset):
     def __len__(self):
         return len(self.img_paths)
     
+
+class BasicTestDatasetRes(Dataset):
+    def __init__(self, img_paths, resize, mean=(0.548, 0.504, 0.479), std=(0.237, 0.247, 0.246)):
+        self.img_paths = img_paths
+        self.transform = transforms.Compose([
+            Resize(resize, Image.BILINEAR),
+#             ColorJitter(0.1, 0.1, 0.1, 0.1),
+            CenterCrop((384, int(384*0.8))),
+#             RandomGrayscale(p=0.1),
+            ToTensor(),
+            Normalize(mean=(0.485,0.456,0.406), std=(0.229,0.224,0.225)),
+        ])
+
+    def __getitem__(self, index):
+        image = Image.open(self.img_paths[index])
+
+        if self.transform:
+            image = self.transform(image)
+        return image
+
+    def __len__(self):
+        return len(self.img_paths)
     
     
 

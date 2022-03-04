@@ -1,6 +1,8 @@
 import argparse
 import os
 from importlib import import_module
+import logging
+import json
 
 import pandas as pd
 import torch
@@ -32,7 +34,9 @@ def inference(data_dir, model_dir, output_dir, args):
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
 
-    num_classes = MaskBaseDataset.num_classes  # 18
+    dataset_num_class = getattr(import_module("dataset"), args.num_dataset)
+    
+    num_classes = dataset_num_class.num_classes  # 18
     model = load_model(model_dir, num_classes, device).to(device)
     model.eval()
 
@@ -75,6 +79,7 @@ if __name__ == '__main__':
     # Data and model checkpoints directories
     parser.add_argument('--batch_size', type=int, default=1000, help='input batch size for validing (default: 1000)')
     parser.add_argument('--dataset', type=str, default='TestDataset', help='dataset augmentation type (default: TestDataset)')
+    parser.add_argument('--num_dataset', type=str, default='OnlyAgeMaskSplitByProfileDataset', help='number of classes used for dataset')
     parser.add_argument("--resize", nargs="+", type=int, default=[128, 96], help='resize size for image when you trained (default: (96, 128))')
     parser.add_argument('--model', type=str, default='BaseModel', help='model type (default: BaseModel)')
     parser.add_argument('--config', default='./configs/model_config.json', help='config.json file')

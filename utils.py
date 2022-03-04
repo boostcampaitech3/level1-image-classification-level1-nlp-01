@@ -19,6 +19,9 @@ def read_json(file):
         data = json.load(json_file)
     return data
 
+def write_json(data, file, indent=4):
+    with open(file, 'w') as json_file:
+        json.dump(data, json_file, indent=4)
 
 def setup_logging(output_path, script_name,
                   default_path='./logs/logging.json', default_level=logging.INFO):
