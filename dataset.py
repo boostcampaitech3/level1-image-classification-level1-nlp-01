@@ -53,11 +53,12 @@ class AddGaussianNoise(object):
 class CustomAugmentation:
     def __init__(self, resize, mean, std, **args):
         self.transform = transforms.Compose([
-            CenterCrop((384, (int)(384 * 0.8))),
             Resize(resize, Image.BILINEAR),
-            RandomHorizontalFlip(),
+            CenterCrop((384, (int)(384 * 0.8))),
+            ColorJitter(0.1, 0.1, 0.1, 0.1),
+            RandomGrayscale(p=0.1),
             ToTensor(),
-            Normalize(mean=mean, std=std)
+            Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
         ])
 
     def __call__(self, image):
@@ -97,9 +98,9 @@ class AgeLabels(int, Enum):
         except Exception:
             raise ValueError(f"Age value should be numeric, {value}")
 
-        if value < 30:
+        if value < 29:
             return cls.YOUNG
-        elif value < 58:
+        elif value < 59:
             return cls.MIDDLE
         else:
             return cls.OLD
@@ -307,58 +308,6 @@ class ThreeWayMaskSplitByProfileDataset(MaskSplitByProfileDataset):
         image_transform = self.transform(image)
         return image_transform, (mask_label, gender_label, age_label)
 
-class ThreeWayStratifiedSplitByProfileDataset(MaskSplitByProfileDataset):
-    """
-        label이 3개로 나오도록 함
-        추가로 노인 연령대 데이터 전부를 train으로 몰아놓도록 만듬
-    """   
-    def setup(self):
-        profiles = os.listdir(self.data_dir)
-        indice = 0
-        for profile in profiles:
-            if profile.startswith("."):  # "." 로 시작하는 파일은 무시합니다
-                continue
-
-            img_folder = os.path.join(self.data_dir, profile)
-            for file_name in os.listdir(img_folder):
-                _file_name, ext = os.path.splitext(file_name)
-                if _file_name not in self._file_names:  # "." 로 시작하는 파일 및 invalid 한 파일들은 무시합니다
-                    continue
-
-                img_path = os.path.join(self.data_dir, profile, file_name)  # (resized_data, 000004_male_Asian_54, mask1.jpg)
-                mask_label = self._file_names[_file_name]
-
-                id, gender, race, age = profile.split("_")
-                gender_label = GenderLabels.from_str(gender)
-                age_label = AgeLabels.from_number(age)
-
-                self.image_paths.append(img_path)
-                self.mask_labels.append(mask_label)
-                self.gender_labels.append(gender_label)
-                self.age_labels.append(age_label)
-                
-                multi_class_label = self.encode_multi_class(mask_label, gender_label, age_label)
-                self.multi_label_dict[multi_class_label].append(indice)
-                indice += 1
-
-    def split_dataset(self) -> Tuple[Subset, Subset]:
-        train_indices = []
-        val_indices = []
-
-        for key, value in self.multi_label_dict.items():
-            n_val = int(len(value) * self.val_ratio)
-            random.shuffle(value)
-            key_val_indices = value[:n_val]
-            key_train_indices = value[n_val:]
-
-            val_indices += key_val_indices
-            train_indices += key_train_indices
-            
-            random.shuffle(val_indices)
-            random.shuffle(train_indices)
-            
-        return Subset(self, train_indices), Subset(self, val_indices)
-
     
 class MaskStratifiedDataset(MaskBaseDataset):
     """
@@ -425,10 +374,11 @@ class TestDataset(Dataset):
             Normalize(mean=mean, std=std),
         ])'''
         self.transform = transforms.Compose([
-            CenterCrop((384, (int)(384 * 0.8))),
             Resize(resize, Image.BILINEAR),
+            CenterCrop((384, (int)(384 * 0.8))),
+            ColorJitter(0.1, 0.1, 0.1, 0.1),
             ToTensor(),
-            Normalize(mean=mean, std=std)
+            Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
         ])
 
     def __getitem__(self, index):
@@ -440,6 +390,49 @@ class TestDataset(Dataset):
 
     def __len__(self):
         return len(self.img_paths)
+
+class CoralMaskSplitByProfileDataset(MaskSplitByProfileDataset):
+    """
+        label이 3개로 나오도록 함
+    """
+    def setup(self):
+        profiles = os.listdir(self.data_dir)
+        for profile in profiles:
+            if profile.startswith("."):  # "." 로 시작하는 파일은 무시합니다
+                continue
+
+            img_folder = os.path.join(self.data_dir, profile)
+            for file_name in os.listdir(img_folder):
+                _file_name, ext = os.path.splitext(file_name)
+                if _file_name not in self._file_names:  # "." 로 시작하는 파일 및 invalid 한 파일들은 무시합니다
+                    continue
+
+                img_path = os.path.join(self.data_dir, profile, file_name)  # (resized_data, 000004_male_Asian_54, mask1.jpg)
+
+                id, gender, race, age = profile.split("_")
+                age = AgeLabels.from_number(age)
+                self.image_paths.append(img_path)
+                self.age_labels.append(age)
+
+    def __getitem__(self, index):
+        assert self.transform is not None, ".set_tranform 메소드를 이용하여 transform 을 주입해주세요"
+
+        image = self.read_image(index)
+        age_label = self.get_age_label(index)
+        age_label = self.label_to_levels(age_label, 3)
+        image_transform = self.transform(image)
+        return image_transform, age_label
+
+    def label_to_levels(self, label, num_classes):
+        levels = [1]*label + [0]*(num_classes - 1 - label)
+        levels = torch.tensor(levels, dtype=torch.float32)
+        return levels
+    
+    def split_dataset(self) -> Tuple[Subset, Subset]:
+        n_val = int(len(self) * self.val_ratio)
+        n_train = len(self) - n_val
+        train_set, val_set = random_split(self, [n_train, n_val])
+        return train_set, val_set
 
 if __name__ == "__main__":
     dataset = MaskBaseDataset('./input/data/train/images', mean=None, std=None)

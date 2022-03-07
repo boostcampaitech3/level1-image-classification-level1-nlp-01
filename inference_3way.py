@@ -1,14 +1,15 @@
 import argparse
 import os
 from importlib import import_module
-
 import pandas as pd
 import torch
 from torch.utils.data import DataLoader
-
-from dataset import TestDataset, MaskBaseDataset
+from dataset import TestDataset, MaskBaseDataset, AgeLabels
 import utils
 from pprint import pprint
+import numpy as np
+
+from model import resnet34, CoralNet_EfficientNet
 
 def load_model(saved_model, num_classes, device):
     model_cls = getattr(import_module("model"), args.model)
@@ -28,6 +29,9 @@ def load_model(saved_model, num_classes, device):
 def inference(data_dir, model_dir, output_dir, args):
     """
     """
+    NUM_CLASSES = 3
+    coral_model = CoralNet_EfficientNet(NUM_CLASSES, False)
+    coral_model.load_state_dict(torch.load('./model/coral8/Epoch10_loss.pth', map_location=torch.device('cuda')))
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
 
@@ -52,12 +56,16 @@ def inference(data_dir, model_dir, output_dir, args):
 
     print("Calculating inference results..")
     preds = []
+    coral_model = coral_model.to(device)
     with torch.no_grad():
         for idx, images in enumerate(loader):
             images = images.to(device)
             pred = model(images)
             pred = [_pred.argmax(dim=-1) for _pred in pred]
-            pred = MaskBaseDataset.encode_multi_class(pred[0], pred[1], pred[2])
+            _, coral_pred = coral_model(images)
+            coral_pred = coral_pred > 0.5
+            coral_pred = np.sum(coral_pred.cpu().numpy())
+            pred = MaskBaseDataset.encode_multi_class(pred[0], pred[1], coral_pred)
             preds.extend(pred.cpu().numpy())
 
     info['ans'] = preds

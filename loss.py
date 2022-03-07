@@ -65,12 +65,23 @@ class F1Loss(nn.Module):
         f1 = f1.clamp(min=self.epsilon, max=1 - self.epsilon)
         return 1 - f1.mean()
 
+class CoralLoss(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, logits, levels, imp):
+        val = (-torch.sum((F.logsigmoid(logits)*levels
+                        + (F.logsigmoid(logits) - logits)*(1-levels))*imp,
+            dim=1))
+        return torch.mean(val)
+
 
 _criterion_entrypoints = {
     'cross_entropy': nn.CrossEntropyLoss,
     'focal': FocalLoss,
     'label_smoothing': LabelSmoothingLoss,
-    'f1': F1Loss
+    'f1': F1Loss,
+    'coral' : CoralLoss
 }
 
 

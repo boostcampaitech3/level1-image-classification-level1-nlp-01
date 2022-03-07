@@ -1,18 +1,18 @@
 {
     "train" : {
         "seed": 42,
-        "epochs": 20,
+        "epochs": 10,
         "dataset": "ThreeWayMaskSplitByProfileDataset",
         "augmentation": "CustomAugmentation",
         "resize": [224,224],
-        "batch_size": 64,
+        "batch_size": 32,
         "valid_batch_size": 64,
         "model": "ThreeWayNet",
         "optimizer": "Adam",
         "lr": 1e-4,
-        "lr_scheduler": "MultiStepLR",
+        "lr_scheduler": "CosineAnnealingLR",
         "val_ratio": 0.2,
-        "criterion": "f1",
+        "criterion": "cross_entropy",
         "lr_decay_step": 20,
         "log_interval": 20,
         "data_dir": "./input/data/train/images",
@@ -34,7 +34,7 @@
         "resize": [224,224],
         "model": "ThreeWayNet",
         "data_dir": "./input/data/eval",
-        "model_path": "./model/exp4/Epoch7_Age_accuracy.pth",
+        "model_path": "./model/exp7/Epoch6_Age_accuracy.pth",
         "output_path": "./inference"
     }
 }
