@@ -3,3 +3,5 @@ comp*
 Data*.ipynb
 parser.py.ipynb
 ipynb
+ __pycache__
+ model/*
