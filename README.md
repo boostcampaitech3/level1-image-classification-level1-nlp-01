@@ -6,22 +6,37 @@
 
 ### Dependencies
 ```python
-timm==0.5.4
-torch==1.10.2
-torchvision==0.8.2                                                           
+torch==1.6.0
+torchvision==0.7.0
+tensorboard==2.4.1
+pandas==1.1.5
+opencv-python==4.5.1.48
+scikit-learn==0.24.1
+matplotlib==3.2.1
+efficientnet_pytorch==0.7.1
+timm==0.5.4                                                         
 ```
   
 ### Install Requirements
 - `pip install -r requirements.txt`
   
 ### Contents  
-- `dataset.py` 
+- `dataset.py`
+- `evaluation.py`
+- `infer_sch.py` : using scheduling
+- `inference-ensemble.py`
+- `inference.py`
+- `inference_custom.py`
+- `label_corrections.py`
 - `loss.py`
 - `model.py`
-- `optimizer.py`
+- `requirements.txt`
 - `train.py`
-- `inference.py`
-- `evaluation.py` 
+- `train_custom.py`
+- `train_sch.py` : using scheduling
+- `utils.py`
+- `validation.py`
+- `validation_custom.py`
  
 ### Training
 - `python train.py --config ./configs/model_config.json`
@@ -66,7 +81,7 @@ torchvision==0.8.2
 - mask, gender, age 기준 18개의 클래스로 분류
 ![Controller Image](./images/comp4.png)
 
-### Trainied Models  
+### Pre-trainied Models  
 - [Efficientnet](https://arxiv.org/abs/1905.11946)
 - [CoAtNet](https://arxiv.org/abs/2106.04803)
 - [Coral-CNN](https://arxiv.org/abs/1901.07884)
