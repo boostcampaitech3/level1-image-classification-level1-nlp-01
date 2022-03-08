@@ -1,6 +1,6 @@
 # pstage_01_image_classification
 
-![Controller Image](./images/comp.png)
+![Controller Image](./images/1.png)
 
 ## Getting Started   
 
@@ -65,10 +65,10 @@ timm==0.5.4
 - PyCharm 또는 Visual Studio Code | Python 3.7(or over)
 
 ### Evaluation
-![Controller Image](./images/comp3.png)
+![Controller Image](./images/2.png)
 
 ## Dataset   
-![Controller Image](./images/comp5.png)  
+![Controller Image](./images/4.png)  
 
 - 전체 사람 수 : 4500명 (train : 2700 | eval : 1800)
 - age : 20대 - 70대
@@ -79,17 +79,18 @@ timm==0.5.4
 
 ### Data Labeling
 - mask, gender, age 기준 18개의 클래스로 분류
-![Controller Image](./images/comp4.png)
+![Controller Image](./images/3.png)
 
 ### Pre-trainied Models  
 - [Efficientnet](https://arxiv.org/abs/1905.11946)
 - [CoAtNet](https://arxiv.org/abs/2106.04803)
 - [Coral-CNN](https://arxiv.org/abs/1901.07884)
 
-### Best Models  
+### Best Model & Hyperparameters  
 ### [Resnet50](https://arxiv.org/abs/1512.03385)
-    - 파라미터 : ./configs/best_model_config.json
-```
+    * Parameters : ./configs/best_model_config.json
+
+```zsh
 $ python train.py ./configs/best_model_config.json
 $ python inference.py ./configs/best_model_config.json
 ```  
