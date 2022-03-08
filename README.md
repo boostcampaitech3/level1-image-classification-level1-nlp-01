@@ -1,6 +1,7 @@
 # pstage_01_image_classification
 
-![Controller Image](./images/comp.png)
+![스크린샷 2022-03-08 오후 4 17 38](https://user-images.githubusercontent.com/82494506/157234442-7cb717c1-6bab-4198-bc04-dfd87e1cbcf8.png)
+
 
 ## Getting Started   
 
@@ -65,10 +66,13 @@ timm==0.5.4
 - PyCharm 또는 Visual Studio Code | Python 3.7(or over)
 
 ### Evaluation
-![Controller Image](./images/comp3.png)
+![image](https://user-images.githubusercontent.com/82494506/157235128-9e8bc5d7-c2be-4318-8599-2d544cf7a7bd.png)
+
+
 
 ## Dataset   
-![Controller Image](./images/comp5.png)  
+![image](https://user-images.githubusercontent.com/82494506/157235261-5bd97d9a-34f5-45c1-a242-717efe78b429.png)
+  
 
 - 전체 사람 수 : 4500명 (train : 2700 | eval : 1800)
 - age : 20대 - 70대
@@ -79,7 +83,7 @@ timm==0.5.4
 
 ### Data Labeling
 - mask, gender, age 기준 18개의 클래스로 분류
-![Controller Image](./images/comp4.png)
+![image](https://user-images.githubusercontent.com/82494506/157234683-aafd4eca-7f20-47b7-82ae-846f990a7ae3.png)
 
 ### Pre-trainied Models  
 - [Efficientnet](https://arxiv.org/abs/1905.11946)
