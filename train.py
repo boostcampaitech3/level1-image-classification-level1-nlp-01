@@ -242,7 +242,7 @@ def train(data_dir, model_dir, save_dir, args):
                     )
             # phil
             f1_labels = torch.stack(f1_labels)
-            f1_labels = f1_labels.cpu().numpy()
+            f1_labels = f1_labels   
             f1_pred = torch.stack(f1_pred)
             f1_pred = f1_pred.cpu().numpy()
             
