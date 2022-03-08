@@ -101,7 +101,7 @@ def train(data_dir, model_dir, save_dir, args):
         data_dir=data_dir,
     )
     num_classes = dataset.num_classes  # 18
-
+    log_logger.info(num_classes)
     # -- augmentation
     transform_module = getattr(import_module("dataset"), args.augmentation)  # default: BaseAugmentation
     transform = transform_module(
@@ -242,7 +242,7 @@ def train(data_dir, model_dir, save_dir, args):
                     )
             # phil
             f1_labels = torch.stack(f1_labels)
-            f1_labels = f1_labels.cpu().numpy()
+            f1_labels = f1_labels   
             f1_pred = torch.stack(f1_pred)
             f1_pred = f1_pred.cpu().numpy()
             

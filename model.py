@@ -142,6 +142,52 @@ class EfficientNet(nn.Module):
           
         return x
     
+    
+class EfficientNetDropout(nn.Module):
+    def __init__(self, num_classes):
+        super().__init__()
+        self.model = timm.create_model('tf_efficientnet_b4', pretrained=True, num_classes = 1000)
+        self.layer = nn.Linear(in_features=1000, out_features= num_classes, bias=True)
+        self.dropouts = nn.ModuleList([
+                    nn.Dropout(0.5) for _ in range(5)])
+        
+    def forward(self, x):
+        x_ = self.model(x)
+        
+        for i, dropout in enumerate(self.dropouts):
+            if i==0:
+                x = self.layer(dropout(x_))
+            else:
+                x += self.layer(dropout(x_))
+
+        else:
+            x /= len(self.dropouts)
+
+        return x
+    
+
+class ConvNextBIn22ft1kDropout(nn.Module):
+    def __init__(self, num_classes):
+        super().__init__()
+        self.model = timm.create_model('convnext_base_in22ft1k', pretrained=True, num_classes = 1000)
+        self.layer = nn.Linear(in_features=1000, out_features= num_classes, bias=True)
+        self.dropouts = nn.ModuleList([
+                    nn.Dropout(0.5) for _ in range(5)])
+        
+    def forward(self, x):
+        x_ = self.model(x)
+        
+        for i, dropout in enumerate(self.dropouts):
+            if i==0:
+                x = self.layer(dropout(x_))
+            else:
+                x += self.layer(dropout(x_))
+
+        else:
+            x /= len(self.dropouts)
+
+        return x
+    
 
 
 class ConvNextLIn22ft1kCustom(nn.Module):
@@ -410,4 +456,49 @@ class ResNext(nn.Module):
     def forward(self, x):
         x = self.model(x)
         return x
+    
+    
+class Resnet50(nn.Module):
+    def __init__(self, num_classes):
+        super().__init__()
+        self.model = models.resnet50(pretrained = True)
+        self.model = change_last_layer(self.model, num_classes)
+    
+    def forward(self, x):
+        x = self.model(x)
+        return x
+    
+class Resnet50dropout(nn.Module):
+    def __init__(self, num_classes):
+        super().__init__()
+        self.model = models.resnet50(pretrained = True)
+        self.model = change_last_layer(self.model, num_classes)
+    
+    def forward(self, x):
+        x = self.model(x)
+        return x
+    
+class Resnet50dropout(nn.Module):
+    def __init__(self, num_classes):
+        super().__init__()
+        self.model = models.resnet50(pretrained = True)
+        self.model = change_last_layer(self.model, 1000)
+        self.layer = nn.Linear(1000, num_classes)
+        self.dropouts = nn.ModuleList([
+                    nn.Dropout(0.5) for _ in range(5)])
+        
+    def forward(self, x):
+        x_ = self.model(x)
+        
+        for i, dropout in enumerate(self.dropouts):
+            if i==0:
+                x = self.layer(dropout(x_))
+            else:
+                x += self.layer(dropout(x_))
+
+        else:
+            x /= len(self.dropouts)
+
+        return x
+    
     
