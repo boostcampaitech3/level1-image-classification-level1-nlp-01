@@ -2,6 +2,7 @@
 
 ![Controller Image](./images/1.png)
 
+
 ## Getting Started   
 
 ### Dependencies
@@ -80,6 +81,7 @@ timm==0.5.4
 ### Data Labeling
 - mask, gender, age 기준 18개의 클래스로 분류
 ![Controller Image](./images/3.png)
+
 
 ### Pre-trainied Models  
 - [Efficientnet](https://arxiv.org/abs/1905.11946)
