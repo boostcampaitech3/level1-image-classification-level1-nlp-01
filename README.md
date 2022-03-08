@@ -72,6 +72,7 @@ timm==0.5.4
 
 ## Dataset   
 ![image](https://user-images.githubusercontent.com/82494506/157235261-5bd97d9a-34f5-45c1-a242-717efe78b429.png)
+![image](https://user-images.githubusercontent.com/82494506/157236159-23544ef1-17fe-47d1-b741-1bd659eb4c62.png)
   
 
 - 전체 사람 수 : 4500명 (train : 2700 | eval : 1800)
